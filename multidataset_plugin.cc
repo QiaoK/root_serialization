@@ -1,15 +1,33 @@
 #include "multidataset_plugin.h"
 
+#ifdef PDC_PATCH
+static pdcid_t pdc;
+static pdcid_t cont;
+
+static std::map<std::string, int> dp2event;
+#endif
 
 static std::map<std::string, multidataset_array*> multi_datasets;
 
 int init_multidataset() {
+#ifndef H5_TIMING_ENABLE
+    int argc;
+    char **argv;
+    MPI_Init(&argc, &argv);
+#endif
     char *p = getenv("HEP_IO_TYPE");
     if ( p != NULL ) {
         set_hdf5_method(atoi(p));
     } else {
         set_hdf5_method(1);
     }
+#ifdef PDC_PATCH
+    pdcid_t cont_prop;
+    pdc = PDCinit("pdc");
+    PDCprop_create(PDC_CONT_CREATE, pdc);
+    cont = PDCcont_create("C", cont_prop);
+    PDCprop_close(cont_prop);
+#endif
     return 0;
 }
 
@@ -17,10 +35,20 @@ int finalize_multidataset() {
     int i, j;
     std::map<std::string, multidataset_array*>::iterator it;
     std::vector<char*>::iterator it2;
+#ifdef PDC_PATCH
+    for ( it = multi_datasets.begin(); it != multi_datasets.end(); ++it ) {
+        if (it->second->did != 0) {
+            PDCobj_close(it->second->did);
+            PDCregion_transfer_close(it->second->transfer_request_id);
+            free(it->second->temp_mem);
+        }
+    }
+#else
     for ( it = multi_datasets.begin(); it != multi_datasets.end(); ++it ) {
         for ( it2 = it->second->temp_mem->begin(); it2 != it->second->temp_mem->end(); ++it2 ) {
             free(*it2);
         }
+
         if (it->second->did != -1) {
             H5Dclose(it->second->did);
         }
@@ -29,6 +57,16 @@ int finalize_multidataset() {
 	delete it->second->temp_mem;
         free(it->second);
     }
+#endif
+
+#ifdef PDC_PATCH
+    PDCcont_close(cont);
+    PDCclose(pdc);
+#endif
+
+#ifndef H5_TIMING_ENABLE
+    MPI_Finalize();
+#endif
     return 0;
 }
 
@@ -39,14 +77,6 @@ int set_hdf5_method(int hdf5_method) {
 
 int get_hdf5_method() {
     return hdf5_method_g;
-}
-
-static hid_t get_dataset_id(const char* name, hid_t gid) {
-    std::string s(name);
-    if ( multi_datasets.find(s) == multi_datasets.end()) {
-        multi_datasets[s]->did = H5Dopen2(gid, name, H5P_DEFAULT);
-    }
-    return multi_datasets[s]->did;
 }
 
 static int wrap_hdf5_spaces(int total_requests, hsize_t *start, hsize_t *end, hid_t did, hid_t* dsid_ptr, hid_t *msid_ptr) {
@@ -92,9 +122,28 @@ static int wrap_hdf5_spaces(int total_requests, hsize_t *start, hsize_t *end, hi
 
 int register_multidataset_request(const char *name, hid_t gid, void *buf, hsize_t start, hsize_t end, hid_t mtype) {
     std::string s(name);
+    std::map<std::string, multidataset_array*>::iterator it;
+
+#ifdef PDC_PATCH
+    pdcid_t obj_prop = PDCprop_create(PDC_OBJ_CREATE, pdc);
+    PDCprop_set_obj_type(obj_prop, PDC_CHAR);
+    uint64_t dims = end - start;
+    PDCprop_set_obj_dims(obj_prop, 1, &dims);
+    char obj_name[1024];
+    sprintf(obj_name, "%s_%d", name, dp2event[s]);
+    multi_datasets[s] = (multidataset_array *) malloc(sizeof(multidataset_array));
+    it = multi_datasets.find(s);
+    it->second->did = PDCobj_create(cont, obj_name, obj_prop);
+    it->second->temp_mem = (char*) malloc(end - start);
+    uint64_t offset, offset_length;
+    offset = 0;
+    offset_length = dims;
+    pdcid_t reg PDCregion_create(1, &offset, &offset_length);
+    it->second->transfer_request_id = PDCregion_transfer_create(it->second->temp_mem, PDC_WRITE, it->second->did, reg, reg);
+    PDCregion_close(reg);
+#else
     char *temp_mem;
     size_t esize = H5Tget_size (mtype) * (end - start);
-    std::map<std::string, multidataset_array*>::iterator it;
 
     it = multi_datasets.find(s);
     if ( it == multi_datasets.end()) {
@@ -105,7 +154,9 @@ int register_multidataset_request(const char *name, hid_t gid, void *buf, hsize_
         multi_datasets[s] = multi_dataset;
 	it = multi_datasets.find(s);
 	it->second->did = -1;
+
     }
+
     if (it->second->did == -1 ) {
         it->second->did = H5Dopen2(gid, name, H5P_DEFAULT);
     }
@@ -116,14 +167,27 @@ int register_multidataset_request(const char *name, hid_t gid, void *buf, hsize_
     memcpy(temp_mem, buf, esize);
     it->second->last_end = end;
     it->second->mtype = mtype;
+#endif
 
     return 0;
 }
 
 int register_multidataset_request_append(const char *name, hid_t gid, void *buf, hsize_t data_size, hid_t mtype) {
     std::string s(name);
+
+#ifdef PDC_PATCH
+    if ( mtype != H5T_NATIVE_CHAR ) {
+        return 0;
+    }
+    if (dp2event.find(s) == dp2event.end()) {
+        dp2event[s] = 1;
+    } else {
+        dp2event[s]++;
+    }
+#else
     std::map<std::string, multidataset_array*>::iterator it;
     hsize_t start, end;
+
     it = multi_datasets.find(s);
     if ( it != multi_datasets.end() ){
         start = it->second->last_end;
@@ -132,6 +196,7 @@ int register_multidataset_request_append(const char *name, hid_t gid, void *buf,
         start = 0;
         end = data_size;
     }
+#endif
     register_multidataset_request(name, gid, buf, start, end, mtype);
     return 0;
 }
@@ -236,6 +301,24 @@ int flush_multidatasets() {
     free(multi_datasets_temp);
 #else
     //printf("rank %d has dataset_size %lld\n", rank, (long long int) dataset_size);
+#ifdef PDC_PATCH
+    pdcid_t transfer_request_ids = (pdcid_t*) malloc(sizeof(pdcid_t) * multi_datasets.size());
+    i = 0;
+    for ( it = multi_datasets.begin(); it != multi_datasets.end(); ++it ) {
+        transfer_request_ids[i] = it->second->transfer_request_id;
+        i++;
+    }
+    PDCregion_transfer_start_all(transfer_request_ids, multi_datasets.size());
+    PDCregion_transfer_wait_all(transfer_request_ids, multi_datasets.size());
+    i = 0;
+    for ( it = multi_datasets.begin(); it != multi_datasets.end(); ++it ) {
+        free(it->second->temp_mem);
+        PDCregion_transfer_close(transfer_request_ids[i]);
+        PDCobj_close(it->second->did);
+        i++;
+    }
+    free(transfer_request_ids);
+#else
     for ( it = multi_datasets.begin(); it != multi_datasets.end(); ++it ) {
         if (it->second->did == -1) {
 	    i++;
@@ -243,6 +326,7 @@ int flush_multidatasets() {
         }
         #ifdef H5_TIMING_ENABLE
         increment_H5Dwrite();
+
         #endif
 #ifdef H5_TIMING_ENABLE
         register_timer_start(&start_time);
@@ -283,6 +367,8 @@ int flush_multidatasets() {
         free(temp_buf[i]);
 	i++;
     }
+#endif
+
 #endif
     multi_datasets.clear();
 
