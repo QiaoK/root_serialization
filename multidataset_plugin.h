@@ -4,6 +4,7 @@
 //#include <mpi.h>
 #include <stdlib.h>
 #include <string.h>
+#include <mpi.h>
 #include <hdf5.h>
 #include "H5Timing.h"
 #define ENABLE_MULTIDATASET 0
