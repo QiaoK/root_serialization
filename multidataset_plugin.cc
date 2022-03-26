@@ -129,7 +129,7 @@ int register_multidataset_request(const char *name, hid_t gid, void *buf, hsize_
     uint64_t offset, offset_length;
     offset = 0;
     offset_length = dims;
-    pdcid_t reg PDCregion_create(1, &offset, &offset_length);
+    pdcid_t reg = PDCregion_create(1, &offset, &offset_length);
     it->second->transfer_request_id = PDCregion_transfer_create(it->second->temp_mem, PDC_WRITE, it->second->did, reg, reg);
     PDCregion_close(reg);
 #else
@@ -165,6 +165,7 @@ int register_multidataset_request(const char *name, hid_t gid, void *buf, hsize_
 
 int register_multidataset_request_append(const char *name, hid_t gid, void *buf, hsize_t data_size, hid_t mtype) {
     std::string s(name);
+    hsize_t start, end;
 
 #ifdef PDC_PATCH
     if ( mtype != H5T_NATIVE_CHAR ) {
@@ -175,9 +176,10 @@ int register_multidataset_request_append(const char *name, hid_t gid, void *buf,
     } else {
         dp2event[s]++;
     }
+    start = 0;
+    end = data_size;
 #else
     std::map<std::string, multidataset_array*>::iterator it;
-    hsize_t start, end;
 
     it = multi_datasets.find(s);
     if ( it != multi_datasets.end() ){
@@ -293,7 +295,7 @@ int flush_multidatasets() {
 #else
     //printf("rank %d has dataset_size %lld\n", rank, (long long int) dataset_size);
 #ifdef PDC_PATCH
-    pdcid_t transfer_request_ids = (pdcid_t*) malloc(sizeof(pdcid_t) * multi_datasets.size());
+    pdcid_t *transfer_request_ids = (pdcid_t*) malloc(sizeof(pdcid_t) * multi_datasets.size());
     i = 0;
     for ( it = multi_datasets.begin(); it != multi_datasets.end(); ++it ) {
         transfer_request_ids[i] = it->second->transfer_request_id;
