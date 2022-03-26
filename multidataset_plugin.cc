@@ -19,7 +19,7 @@ int init_multidataset() {
 #ifdef PDC_PATCH
     pdcid_t cont_prop;
     pdc = PDCinit("pdc");
-    PDCprop_create(PDC_CONT_CREATE, pdc);
+    cont_prop = PDCprop_create(PDC_CONT_CREATE, pdc);
     cont = PDCcont_create("C", cont_prop);
     PDCprop_close(cont_prop);
 #endif
