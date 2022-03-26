@@ -5,10 +5,6 @@
 static H5TimerClass* timer_class;
 
 int init_timers() {
-    int argc;
-    char** argv;
-    MPI_Init(&argc, &argv);
-
     struct timeval temp_time;
 
     timer_class = (H5TimerClass*) malloc(sizeof(H5TimerClass));
@@ -185,7 +181,7 @@ int finalize_timers() {
     printf("merge requests time = %lf, wrap requests time = %lf, H5Dclose = %lf\n", timer_class->merge_requests_time / 1000000, timer_class->wrap_requests_time / 1000000, timer_class->H5Dclose_time / 1000000);
 
     free(timer_class);
-    MPI_Finalize();
+
     return 0;
 }
 #endif

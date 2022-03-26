@@ -38,9 +38,12 @@ namespace {
 }
 
 int main(int argc, char* argv[]) {
+  MPI_Init(&argc, &argv);
+
 #ifdef H5_TIMING_ENABLE
   init_timers();
 #endif
+
   init_multidataset();
 
   using namespace cce::tf;
@@ -191,4 +194,6 @@ int main(int argc, char* argv[]) {
 #ifdef H5_TIMING_ENABLE
   finalize_timers();
 #endif
+
+  MPI_Finalize();
 }
