@@ -10,11 +10,6 @@ static std::map<std::string, int> dp2event;
 static std::map<std::string, multidataset_array*> multi_datasets;
 
 int init_multidataset() {
-#ifndef H5_TIMING_ENABLE
-    int argc;
-    char **argv;
-    MPI_Init(&argc, &argv);
-#endif
     char *p = getenv("HEP_IO_TYPE");
     if ( p != NULL ) {
         set_hdf5_method(atoi(p));
@@ -62,10 +57,6 @@ int finalize_multidataset() {
 #ifdef PDC_PATCH
     PDCcont_close(cont);
     PDCclose(pdc);
-#endif
-
-#ifndef H5_TIMING_ENABLE
-    MPI_Finalize();
 #endif
     return 0;
 }

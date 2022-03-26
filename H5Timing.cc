@@ -6,9 +6,6 @@ static H5TimerClass* timer_class;
 
 int init_timers() {
     struct timeval temp_time;
-    int argc;
-    char **argv;
-    MPI_Init(&argc, &argv);
 
     timer_class = (H5TimerClass*) malloc(sizeof(H5TimerClass));
 
@@ -185,7 +182,6 @@ int finalize_timers() {
 
     free(timer_class);
 
-    MPI_Finalize();
     return 0;
 }
 #endif
