@@ -13,7 +13,9 @@
 #define PDC_PATCH
 
 #ifdef PDC_PATCH
+extern "C" {
 #include "pdc.h"
+}
 #endif
 
 #define H5_TIMING_ENABLE
