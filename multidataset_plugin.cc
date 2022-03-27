@@ -34,6 +34,7 @@ int finalize_multidataset() {
     int i, j;
     std::map<std::string, multidataset_array*>::iterator it;
     std::vector<char*>::iterator it2;
+    double start_time;
 #ifdef PDC_PATCH
     flush_multidatasets();
 
@@ -59,9 +60,14 @@ int finalize_multidataset() {
         for ( it2 = it->second->temp_mem->begin(); it2 != it->second->temp_mem->end(); ++it2 ) {
             free(*it2);
         }
-
         if (it->second->did != -1) {
+#ifdef H5_TIMING_ENABLE
+            register_timer_start(&start_time);
+#endif
             H5Dclose(it->second->did);
+#ifdef H5_TIMING_ENABLE
+            register_H5Dclose_timer_end(start_time);
+#endif
         }
 	delete it->second->start;
 	delete it->second->end;
