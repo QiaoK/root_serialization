@@ -5,6 +5,10 @@ static pdcid_t pdc;
 static pdcid_t cont;
 
 static std::map<std::string, int> dp2event;
+
+static std::vector<pdcid_t> cached_objs;
+static std::vector<pdcid_t> cached_requests;
+static std::vector<char*> cached_bufs;
 #endif
 
 static std::map<std::string, multidataset_array*> multi_datasets;
@@ -31,13 +35,22 @@ int finalize_multidataset() {
     std::map<std::string, multidataset_array*>::iterator it;
     std::vector<char*>::iterator it2;
 #ifdef PDC_PATCH
-    for ( it = multi_datasets.begin(); it != multi_datasets.end(); ++it ) {
-        if (it->second->did != 0) {
-            PDCobj_close(it->second->did);
-            PDCregion_transfer_close(it->second->transfer_request_id);
-            free(it->second->temp_mem);
+    flush_multidatasets();
+
+    if (cached_objs.size()) {
+        PDCregion_transfer_wait_all(cached_requests.begin(), cached_requests.size());
+        for ( i = 0; i < cached_requests.size(); ++i ) {
+            free(cached_bufs[i]);
+            PDCregion_transfer_close(cached_requests[i]);
+            PDCobj_close(cached_objs[i]);
+            i++;
         }
+        cached_objs.clear();
+        cached_requests.clear();
+        cached_bufs.clear();
     }
+    PDCcont_close(cont);
+    PDCclose(pdc);
 #else
     for ( it = multi_datasets.begin(); it != multi_datasets.end(); ++it ) {
         for ( it2 = it->second->temp_mem->begin(); it2 != it->second->temp_mem->end(); ++it2 ) {
@@ -52,11 +65,6 @@ int finalize_multidataset() {
 	delete it->second->temp_mem;
         free(it->second);
     }
-#endif
-
-#ifdef PDC_PATCH
-    PDCcont_close(cont);
-    PDCclose(pdc);
 #endif
     return 0;
 }
@@ -243,7 +251,6 @@ int flush_multidatasets() {
     hsize_t *new_start, *new_end;
     int new_request_size;
     hid_t msid, dsid;
-    int dataset_size = multi_datasets.size();
     std::map<std::string, multidataset_array*>::iterator it;
     char **temp_buf = (char**) malloc(sizeof(char*) * dataset_size);
 #ifdef H5_TIMING_ENABLE
@@ -295,23 +302,33 @@ int flush_multidatasets() {
 #else
     //printf("rank %d has dataset_size %lld\n", rank, (long long int) dataset_size);
 #ifdef PDC_PATCH
-    pdcid_t *transfer_request_ids = (pdcid_t*) malloc(sizeof(pdcid_t) * multi_datasets.size());
+    if (cached_objs.size()) {
+        PDCregion_transfer_wait_all(cached_requests.begin(), cached_requests.size());
+        for ( i = 0; i < cached_requests.size(); ++i ) {
+            free(cached_bufs[i]);
+            PDCregion_transfer_close(cached_requests[i]);
+            PDCobj_close(cached_objs[i]);
+            i++;
+        }
+        cached_objs.clear();
+        cached_requests.clear();
+        cached_bufs.clear();
+    }
+
     i = 0;
+    cached_objs.resize(multi_datasets.size());
+    cached_requests.resize(multi_datasets.size());
+    cached_bufs.resize(multi_datasets.size());
     for ( it = multi_datasets.begin(); it != multi_datasets.end(); ++it ) {
-        transfer_request_ids[i] = it->second->transfer_request_id;
+        cached_objs[i] = it->second->did;
+        cached_requests[i] = it->second->transfer_request_id;
+        cached_bufs[i] = it->second->temp_mem;
         i++;
     }
-    PDCregion_transfer_start_all(transfer_request_ids, multi_datasets.size());
-    PDCregion_transfer_wait_all(transfer_request_ids, multi_datasets.size());
-    i = 0;
-    for ( it = multi_datasets.begin(); it != multi_datasets.end(); ++it ) {
-        free(it->second->temp_mem);
-        PDCregion_transfer_close(transfer_request_ids[i]);
-        PDCobj_close(it->second->did);
-        i++;
-    }
-    free(transfer_request_ids);
+    PDCregion_transfer_start_all(cached_requests.begin(), cached_requests.size());
+    multi_datasets.clear();
 #else
+    int dataset_size = multi_datasets.size();
     for ( it = multi_datasets.begin(); it != multi_datasets.end(); ++it ) {
         if (it->second->did == -1) {
 	    i++;
