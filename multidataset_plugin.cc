@@ -38,16 +38,13 @@ int finalize_multidataset() {
     flush_multidatasets();
 
     if (cached_objs.size()) {
-        PDCregion_transfer_wait_all(cached_requests.begin(), cached_requests.size());
+        PDCregion_transfer_wait_all(&cached_requests[0], cached_requests.size());
         for ( i = 0; i < cached_requests.size(); ++i ) {
             free(cached_bufs[i]);
             PDCregion_transfer_close(cached_requests[i]);
             PDCobj_close(cached_objs[i]);
             i++;
         }
-        cached_objs.clear();
-        cached_requests.clear();
-        cached_bufs.clear();
     }
     PDCcont_close(cont);
     PDCclose(pdc);
@@ -303,7 +300,7 @@ int flush_multidatasets() {
     //printf("rank %d has dataset_size %lld\n", rank, (long long int) dataset_size);
 #ifdef PDC_PATCH
     if (cached_objs.size()) {
-        PDCregion_transfer_wait_all(cached_requests.begin(), cached_requests.size());
+        PDCregion_transfer_wait_all(&cached_requests[0], cached_requests.size());
         for ( i = 0; i < cached_requests.size(); ++i ) {
             free(cached_bufs[i]);
             PDCregion_transfer_close(cached_requests[i]);
@@ -325,7 +322,7 @@ int flush_multidatasets() {
         cached_bufs[i] = it->second->temp_mem;
         i++;
     }
-    PDCregion_transfer_start_all(cached_requests.begin(), cached_requests.size());
+    PDCregion_transfer_start_all(&cached_requests[0], cached_requests.size());
     multi_datasets.clear();
 #else
     int dataset_size = multi_datasets.size();
