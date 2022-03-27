@@ -323,7 +323,6 @@ int flush_multidatasets() {
         i++;
     }
     PDCregion_transfer_start_all(&cached_requests[0], cached_requests.size());
-    multi_datasets.clear();
 #else
     int dataset_size = multi_datasets.size();
     char **temp_buf = (char**) malloc(sizeof(char*) * dataset_size);
@@ -375,11 +374,11 @@ int flush_multidatasets() {
         free(temp_buf[i]);
 	i++;
     }
+    free(temp_buf);
 #endif
 
 #endif
     multi_datasets.clear();
 
-    free(temp_buf);
     return 0;
 }
