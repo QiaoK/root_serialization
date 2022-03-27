@@ -38,7 +38,13 @@ int finalize_multidataset() {
     flush_multidatasets();
 
     if (cached_objs.size()) {
+#ifdef H5_TIMING_ENABLE
+        register_timer_start(&start_time);
+#endif
         PDCregion_transfer_wait_all(&cached_requests[0], cached_requests.size());
+#ifdef H5_TIMING_ENABLE
+        register_PDCwait_timer_end(start_time);
+#endif
         for ( i = 0; i < cached_requests.size(); ++i ) {
             free(cached_bufs[i]);
             PDCregion_transfer_close(cached_requests[i]);
@@ -300,7 +306,13 @@ int flush_multidatasets() {
     //printf("rank %d has dataset_size %lld\n", rank, (long long int) dataset_size);
 #ifdef PDC_PATCH
     if (cached_objs.size()) {
+#ifdef H5_TIMING_ENABLE
+        register_timer_start(&start_time);
+#endif
         PDCregion_transfer_wait_all(&cached_requests[0], cached_requests.size());
+#ifdef H5_TIMING_ENABLE
+        register_PDCwait_timer_end(start_time);
+#endif
         for ( i = 0; i < cached_requests.size(); ++i ) {
             free(cached_bufs[i]);
             PDCregion_transfer_close(cached_requests[i]);
@@ -322,7 +334,14 @@ int flush_multidatasets() {
         cached_bufs[i] = it->second->temp_mem;
         i++;
     }
+#ifdef H5_TIMING_ENABLE
+    register_timer_start(&start_time);
+#endif
     PDCregion_transfer_start_all(&cached_requests[0], cached_requests.size());
+#ifdef H5_TIMING_ENABLE
+    register_PDCstart_timer_end(start_time);
+#endif
+
 #else
     int dataset_size = multi_datasets.size();
     char **temp_buf = (char**) malloc(sizeof(char*) * dataset_size);

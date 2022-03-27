@@ -9,11 +9,6 @@
 #include "H5Timing.h"
 #define ENABLE_MULTIDATASET 0
 #define MULTIDATASET_DEFINE 1
-#undef PDC_PATCH
-
-#ifdef PDC_PATCH
-#include "pdc.h"
-#endif
 
 static int max_batch_size_g = 2;
 static int hdf5_method_g = -1;

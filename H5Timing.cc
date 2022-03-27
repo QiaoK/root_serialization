@@ -16,16 +16,20 @@ int init_timers() {
     timer_class->dataset_sz_timers = new std::vector<H5Timer>;
     timer_class->dataset_read_timers = new std::vector<H5Timer>;
     timer_class->dataset_sz_read_timers = new std::vector<H5Timer>;
-
+#ifdef PDC_PATCH
+    timer_class->PDCwrite_count = 0;
+    timer_class->PDCread_count = 0;
+    timer_class->PDCstart_time = .0;
+    timer_class->PDCwait_time = .0;
+#else
     timer_class->H5Dwrite_count = 0;
     timer_class->H5Dread_count = 0;
-
     timer_class->H5Dwrite_time = .0;
     timer_class->H5Dread_time = .0;
     timer_class->wrap_requests_time = .0;
     timer_class->merge_requests_time = .0;
     timer_class->H5Dclose_time = .0;
-
+#endif
     return 0;
 }
 
@@ -52,7 +56,31 @@ int register_timer_start(double *start_time) {
     *start_time = (temp_time.tv_usec + temp_time.tv_sec * 1000000);
     return 0;
 }
+#ifdef PDC_PATCH
+int register_PDCstart_timer_end(double start_time) {
+    struct timeval temp_time;
+    gettimeofday(&temp_time, NULL);
+    timer_class->PDCstart_time += (temp_time.tv_usec + temp_time.tv_sec * 1000000) - start_time;
+    return 0;
+}
 
+int register_PDCwait_timer_end(double start_time) {
+    struct timeval temp_time;
+    gettimeofday(&temp_time, NULL);
+    timer_class->PDCwait_time += (temp_time.tv_usec + temp_time.tv_sec * 1000000) - start_time;
+    return 0;
+}
+
+int increment_H5Dwrite() {
+    timer_class->PDCwrite_count++;
+    return 0;
+}
+
+int increment_PDCread() {
+    timer_class->PDCread_count++;
+    return 0;
+}
+#else
 int register_H5Dclose_timer_end(double start_time) {
     struct timeval temp_time;
     gettimeofday(&temp_time, NULL);
@@ -66,6 +94,7 @@ int register_merge_requests_timer_end(double start_time) {
     timer_class->merge_requests_time += (temp_time.tv_usec + temp_time.tv_sec * 1000000) - start_time;
     return 0;
 }
+
 int register_wrap_requests_timer_end(double start_time) {
     struct timeval temp_time;
     gettimeofday(&temp_time, NULL);
@@ -80,6 +109,16 @@ int register_H5Dwrite_timer_end(double start_time) {
     return 0;
 }
 
+int increment_H5Dwrite() {
+    timer_class->H5Dwrite_count++;
+    return 0;
+}
+
+int increment_H5Dread() {
+    timer_class->H5Dread_count++;
+    return 0;
+}
+#endif
 int register_dataset_timer_start(const char *name) {
     TIMER_START(timer_class->dataset_timers);
     return 0;
@@ -118,16 +157,6 @@ int register_dataset_sz_read_timer_end(size_t data_size) {
     return 0;
 }
 
-int increment_H5Dwrite() {
-    timer_class->H5Dwrite_count++;
-    return 0;
-}
-
-int increment_H5Dread() {
-    timer_class->H5Dread_count++;
-    return 0;
-}
-
 static int record_timer(std::vector<H5Timer> *timer, const char* filename) {
     FILE *stream;
     size_t i, total_mem_size;
@@ -154,7 +183,11 @@ static int record_timer(std::vector<H5Timer> *timer, const char* filename) {
 }
 
 static int output_results() {
+#ifdef PDC_PATCH
+    printf("total PDCwrite calls = %d, PDCread calls = %d\n", timer_class->PDCwrite_count, timer_class->PDCread_count);
+#else
     printf("total H5Dwrite calls = %d, H5Dread calls = %d\n", timer_class->H5Dwrite_count, timer_class->H5Dread_count);
+#endif
     if ( timer_class->dataset_timers->size() ) {
         record_timer(timer_class->dataset_timers, "dataset_write_record.csv");
     }
@@ -177,9 +210,12 @@ int finalize_timers() {
 
     gettimeofday(&temp_time, NULL);
     timer_class->total_end_time = (temp_time.tv_usec + temp_time.tv_sec * 1000000) + .0;
+#ifdef PDC_PATCH
+    printf("total program time is %lf, PDCstart time = %lf, PDCwait time = %lf\n", (timer_class->total_end_time - timer_class->total_start_time) / 1000000, timer_class->PDCstart_time / 1000000, timer_class->PDCwait_time / 1000000);
+#else
     printf("total program time is %lf, H5Dwrite time = %lf, H5Dread time = %lf\n", (timer_class->total_end_time - timer_class->total_start_time) / 1000000, timer_class->H5Dwrite_time / 1000000, timer_class->H5Dread_time / 1000000);
     printf("merge requests time = %lf, wrap requests time = %lf, H5Dclose = %lf\n", timer_class->merge_requests_time / 1000000, timer_class->wrap_requests_time / 1000000, timer_class->H5Dclose_time / 1000000);
-
+#endif
     free(timer_class);
 
     return 0;
