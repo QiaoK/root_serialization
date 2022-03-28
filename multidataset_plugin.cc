@@ -339,6 +339,9 @@ int flush_multidatasets() {
         cached_requests[i] = it->second->transfer_request_id;
         cached_bufs[i] = it->second->temp_mem;
         i++;
+        #ifdef H5_TIMING_ENABLE
+        increment_PDCwrite();
+        #endif
     }
 #ifdef H5_TIMING_ENABLE
     register_timer_start(&start_time);
