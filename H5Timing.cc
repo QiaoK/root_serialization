@@ -71,16 +71,6 @@ int register_PDCwait_timer_end(double start_time) {
     return 0;
 }
 
-int increment_H5Dwrite() {
-    timer_class->PDCwrite_count++;
-    return 0;
-}
-
-int increment_PDCread() {
-    timer_class->PDCread_count++;
-    return 0;
-}
-
 int increment_PDCwrite() {
     timer_class->PDCwrite_count++;
     return 0;
