@@ -134,6 +134,7 @@ int register_multidataset_request(const char *name, hid_t gid, void *buf, hsize_
 
 #ifdef PDC_PATCH
     pdcid_t obj_prop = PDCprop_create(PDC_OBJ_CREATE, pdc);
+    PDCprop_set_obj_transfer_region_type(obj_prop, PDC_REGION_DYNAMIC);
     PDCprop_set_obj_type(obj_prop, PDC_CHAR);
     uint64_t dims = end - start;
     PDCprop_set_obj_dims(obj_prop, 1, &dims);
