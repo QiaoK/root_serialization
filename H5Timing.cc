@@ -80,6 +80,16 @@ int increment_PDCread() {
     timer_class->PDCread_count++;
     return 0;
 }
+
+int increment_PDCwrite() {
+    timer_class->PDCwrite_count++;
+    return 0;
+}
+
+int increment_PDCread() {
+    timer_class->PDCread_count++;
+    return 0;
+}
 #else
 int register_H5Dclose_timer_end(double start_time) {
     struct timeval temp_time;
