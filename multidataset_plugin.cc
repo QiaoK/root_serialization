@@ -182,7 +182,6 @@ int register_multidataset_request(const char *name, hid_t gid, void *buf, hsize_
     memcpy(temp_mem, buf, esize);
     it->second->last_end = end;
     it->second->mtype = mtype;
-#endif
 
     return 0;
 }
