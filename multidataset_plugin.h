@@ -30,18 +30,16 @@ typedef struct H5D_rw_multi_t
 #endif
 
 typedef struct multidataset_array {
-#ifdef PDC_PATCH
-    pdcid_t did;
-    pdcid_t transfer_request_id;
-    char* temp_mem;
-#else
     std::vector<char*> *temp_mem;
     std::vector<hsize_t> *start;
     std::vector<hsize_t> *end;
     hsize_t last_end;
+#ifdef PDC_PATCH
+    pdcid_t did;
+#else
     hid_t did;
-    hid_t mtype;      /* memory datatype ID */
 #endif
+    hid_t mtype;      /* memory datatype ID */
 } multidataset_array;
 
 int set_hdf5_method(int hdf5_method);
