@@ -169,7 +169,7 @@ int register_multidataset_request(const char *name, hid_t gid, void *buf, hsize_
         PDCprop_set_obj_dims(obj_prop, 1, &dims);
 
         it->second->did = PDCobj_create(cont, name, obj_prop);
-        PDCprop_close(obj_prop)
+        PDCprop_close(obj_prop);
     }
 #else
     if (it->second->did == -1 ) {
