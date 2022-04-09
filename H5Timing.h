@@ -59,13 +59,13 @@ int register_PDCwait_timer_end(double start_time);
 int increment_PDCwrite();
 int increment_PDCread();
 #else
-int register_merge_requests_timer_end(double start_time);
 int register_wrap_requests_timer_end(double start_time);
 int register_H5Dclose_timer_end(double start_time);
 int register_H5Dwrite_timer_end(double start_time);
 int increment_H5Dwrite();
 int increment_H5Dread();
 #endif
+int register_merge_requests_timer_end(double start_time);
 int register_dataset_timer_start(const char *name);
 int register_dataset_timer_end(size_t data_size);
 int register_dataset_sz_timer_start(const char *name);
