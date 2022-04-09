@@ -43,10 +43,10 @@ typedef struct H5TimerClass{
     int H5Dread_count;
     double H5Dclose_time;
     double wrap_requests_time;
-    double merge_requests_time;
     double H5Dwrite_time;
     double H5Dread_time;
 #endif
+    double merge_requests_time;
     double total_start_time;
     double total_end_time;
 } H5TimerClass;
