@@ -168,7 +168,7 @@ int register_multidataset_request(const char *name, hid_t gid, void *buf, hsize_
         dims = end - start;
         PDCprop_set_obj_dims(obj_prop, 1, &dims);
 
-        it->second->did = PDCobj_create(cont, obj_name, obj_prop);
+        it->second->did = PDCobj_create(cont, name, obj_prop);
     }
 #else
     if (it->second->did == -1 ) {
@@ -259,6 +259,7 @@ int flush_multidatasets() {
     int new_request_size;
     hid_t msid, dsid;
     std::map<std::string, multidataset_array*>::iterator it;
+    int dataset_size = multi_datasets.size();
     char **temp_buf = (char**) malloc(sizeof(char*) * dataset_size);
 #ifdef H5_TIMING_ENABLE
     double start_time;
@@ -341,7 +342,8 @@ int flush_multidatasets() {
 #ifdef H5_TIMING_ENABLE
         register_merge_requests_timer_end(start_time);
 #endif
-        PDCobj_set_dims(it->second->did, 1, new_end + new_request_size - 1);
+        uint64_t max_dim = new_end[new_request_size - 1];
+        PDCobj_set_dims(it->second->did, 1, &max_dim);
         char* ptr = temp_buf[i];
         for ( j = 0; j < new_request_size; ++j ) {
             uint64_t offset, offset_length;
@@ -373,7 +375,6 @@ int flush_multidatasets() {
 #endif
 
 #else
-    int dataset_size = multi_datasets.size();
     for ( it = multi_datasets.begin(); it != multi_datasets.end(); ++it ) {
         if (it->second->did == -1) {
 	    i++;
