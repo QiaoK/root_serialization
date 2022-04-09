@@ -160,15 +160,16 @@ int register_multidataset_request(const char *name, hid_t gid, void *buf, hsize_
     if (it->second->did == 0 ) {
         pdcid_t obj_prop = PDCprop_create(PDC_OBJ_CREATE, pdc);
         PDCprop_set_obj_transfer_region_type(obj_prop, PDC_REGION_DYNAMIC);
-        if (mtype == H5T_NATIVE_CHAR) {
+        if (mtype == H5T_NATIVE_ULLONG){
+            PDCprop_set_obj_type(obj_prop, PDC_UINT64);
+        } else {
             PDCprop_set_obj_type(obj_prop, PDC_CHAR);
-        } else if (mtype == H5T_NATIVE_INT){
-            PDCprop_set_obj_type(obj_prop, PDC_INT);
         }
         dims = end - start;
         PDCprop_set_obj_dims(obj_prop, 1, &dims);
 
         it->second->did = PDCobj_create(cont, name, obj_prop);
+        PDCprop_close(obj_prop)
     }
 #else
     if (it->second->did == -1 ) {
