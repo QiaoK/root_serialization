@@ -262,6 +262,7 @@ int flush_multidatasets() {
     std::map<std::string, multidataset_array*>::iterator it;
     int dataset_size = multi_datasets.size();
     char **temp_buf = (char**) malloc(sizeof(char*) * dataset_size);
+    return 0;
 #ifdef H5_TIMING_ENABLE
     double start_time;
 #endif
