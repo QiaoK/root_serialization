@@ -88,13 +88,6 @@ int register_H5Dclose_timer_end(double start_time) {
     return 0;
 }
 
-int register_merge_requests_timer_end(double start_time) {
-    struct timeval temp_time;
-    gettimeofday(&temp_time, NULL);
-    timer_class->merge_requests_time += (temp_time.tv_usec + temp_time.tv_sec * 1000000) - start_time;
-    return 0;
-}
-
 int register_wrap_requests_timer_end(double start_time) {
     struct timeval temp_time;
     gettimeofday(&temp_time, NULL);
@@ -119,6 +112,14 @@ int increment_H5Dread() {
     return 0;
 }
 #endif
+
+int register_merge_requests_timer_end(double start_time) {
+    struct timeval temp_time;
+    gettimeofday(&temp_time, NULL);
+    timer_class->merge_requests_time += (temp_time.tv_usec + temp_time.tv_sec * 1000000) - start_time;
+    return 0;
+}
+
 int register_dataset_timer_start(const char *name) {
     TIMER_START(timer_class->dataset_timers);
     return 0;
