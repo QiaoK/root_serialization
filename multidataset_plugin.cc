@@ -9,6 +9,7 @@ static std::map<std::string, int> dp2event;
 static std::vector<pdcid_t> cached_objs;
 static std::vector<pdcid_t> cached_requests;
 static std::vector<char*> cached_bufs;
+static std::set<std::string> existing_objs;
 #endif
 
 static std::map<std::string, multidataset_array*> multi_datasets;
@@ -155,18 +156,23 @@ int register_multidataset_request(const char *name, hid_t gid, void *buf, hsize_
     int ndim;
     uint64_t dims;
     if (flag) {
-        pdcid_t obj_prop = PDCprop_create(PDC_OBJ_CREATE, pdc);
-        PDCprop_set_obj_transfer_region_type(obj_prop, PDC_REGION_DYNAMIC);
-        if (mtype == H5T_NATIVE_ULLONG){
-            PDCprop_set_obj_type(obj_prop, PDC_UINT64);
-        } else {
-            PDCprop_set_obj_type(obj_prop, PDC_CHAR);
-        }
-        dims = end - start;
-        PDCprop_set_obj_dims(obj_prop, 1, &dims);
+        if (existing_objs.find(s) == existing_objs.end()) {
+            pdcid_t obj_prop = PDCprop_create(PDC_OBJ_CREATE, pdc);
+            PDCprop_set_obj_transfer_region_type(obj_prop, PDC_REGION_DYNAMIC);
+            if (mtype == H5T_NATIVE_ULLONG){
+                PDCprop_set_obj_type(obj_prop, PDC_UINT64);
+            } else {
+                PDCprop_set_obj_type(obj_prop, PDC_CHAR);
+            }
+            dims = end - start;
+            PDCprop_set_obj_dims(obj_prop, 1, &dims);
 
-        it->second->did = PDCobj_create(cont, name, obj_prop);
-        PDCprop_close(obj_prop);
+            it->second->did = PDCobj_create(cont, name, obj_prop);
+            PDCprop_close(obj_prop);
+            existing_objs.insert(s);
+        } else {
+            it->second->did = PDCobj_open(name, pdc);
+        }
     }
 #else
     if (flag) {
@@ -359,6 +365,9 @@ int flush_multidatasets() {
         cached_bufs.push_back(temp_buf[i]);
         cached_objs.push_back(it->second->did);
         free(new_start);
+        delete it->second->start;
+        delete it->second->end;
+        delete it->second->temp_mem;
         #ifdef H5_TIMING_ENABLE
         increment_PDCwrite();
         #endif
@@ -423,9 +432,7 @@ int flush_multidatasets() {
     }
 #endif
     free(temp_buf);
-
 #endif
     multi_datasets.clear();
-
     return 0;
 }
