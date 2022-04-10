@@ -139,6 +139,7 @@ int register_multidataset_request(const char *name, hid_t gid, void *buf, hsize_
     std::map<std::string, multidataset_array*>::iterator it;
     char *temp_mem;
     size_t esize = H5Tget_size (mtype) * (end - start);
+    int flag = 1;
 
     it = multi_datasets.find(s);
     if ( it == multi_datasets.end()) {
@@ -148,16 +149,12 @@ int register_multidataset_request(const char *name, hid_t gid, void *buf, hsize_
 	multi_dataset->temp_mem = new std::vector<char*>;
         multi_datasets[s] = multi_dataset;
 	it = multi_datasets.find(s);
-#ifdef PDC_PATCH
-	it->second->did = 0;
-#else
-	it->second->did = -1;
-#endif
+        flag = 0;
     }
 #ifdef PDC_PATCH
     int ndim;
     uint64_t dims;
-    if (it->second->did == 0 ) {
+    if (flag) {
         pdcid_t obj_prop = PDCprop_create(PDC_OBJ_CREATE, pdc);
         PDCprop_set_obj_transfer_region_type(obj_prop, PDC_REGION_DYNAMIC);
         if (mtype == H5T_NATIVE_ULLONG){
@@ -172,7 +169,7 @@ int register_multidataset_request(const char *name, hid_t gid, void *buf, hsize_
         PDCprop_close(obj_prop);
     }
 #else
-    if (it->second->did == -1 ) {
+    if (flag) {
         it->second->did = H5Dopen2(gid, name, H5P_DEFAULT);
     }
 #endif
