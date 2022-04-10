@@ -45,7 +45,7 @@ int finalize_multidataset() {
 #ifdef H5_TIMING_ENABLE
         register_timer_start(&start_time);
 #endif
-        PDCregion_transfer_wait_all(&cached_requests[0], cached_requests.size());
+        //PDCregion_transfer_wait_all(&cached_requests[0], cached_requests.size());
 #ifdef H5_TIMING_ENABLE
         register_PDCwait_timer_end(start_time);
 #endif
@@ -321,7 +321,7 @@ int flush_multidatasets() {
 #ifdef H5_TIMING_ENABLE
         register_timer_start(&start_time);
 #endif
-        PDCregion_transfer_wait_all(&cached_requests[0], cached_requests.size());
+        //PDCregion_transfer_wait_all(&cached_requests[0], cached_requests.size());
 #ifdef H5_TIMING_ENABLE
         register_PDCwait_timer_end(start_time);
 #endif
@@ -354,14 +354,17 @@ int flush_multidatasets() {
         for ( j = 0; j < new_request_size; ++j ) {
             uint64_t offset, offset_length;
             offset = new_start[j];
-            offset_length = new_end[j];
+            offset_length = new_end[j] - new_start[j];
             pdcid_t reg = PDCregion_create(1, &offset, &offset_length);
             pdcid_t transfer_request_id = PDCregion_transfer_create(ptr, PDC_WRITE, it->second->did, reg, reg);
+            PDCregion_transfer_start(transfer_request_id);
+            PDCregion_transfer_wait(transfer_request_id);
+
             cached_requests.push_back(transfer_request_id);
             if (it->second->mtype == H5T_NATIVE_CHAR) {
                 ptr += new_end[j] - new_start[j];
-            } else if (it->second->mtype == H5T_NATIVE_INT) {
-                ptr += (new_end[j] - new_start[j]) * sizeof(int);
+            } else {
+                ptr += (new_end[j] - new_start[j]) * sizeof(uint64_t);
             }
         }
         cached_bufs.push_back(temp_buf[i]);
@@ -378,7 +381,7 @@ int flush_multidatasets() {
 #ifdef H5_TIMING_ENABLE
     register_timer_start(&start_time);
 #endif
-    PDCregion_transfer_start_all(&cached_requests[0], cached_requests.size());
+    //PDCregion_transfer_start_all(&cached_requests[0], cached_requests.size());
 #ifdef H5_TIMING_ENABLE
     register_PDCstart_timer_end(start_time);
 #endif
