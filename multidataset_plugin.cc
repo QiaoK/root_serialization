@@ -139,7 +139,7 @@ int register_multidataset_request(const char *name, hid_t gid, void *buf, hsize_
     std::map<std::string, multidataset_array*>::iterator it;
     char *temp_mem;
     size_t esize = H5Tget_size (mtype) * (end - start);
-    int flag = 1;
+    int flag = 0;
 
     it = multi_datasets.find(s);
     if ( it == multi_datasets.end()) {
@@ -149,7 +149,7 @@ int register_multidataset_request(const char *name, hid_t gid, void *buf, hsize_
 	multi_dataset->temp_mem = new std::vector<char*>;
         multi_datasets[s] = multi_dataset;
 	it = multi_datasets.find(s);
-        flag = 0;
+        flag = 1;
     }
 #ifdef PDC_PATCH
     int ndim;
