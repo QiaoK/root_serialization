@@ -1,6 +1,8 @@
 #include "multidataset_plugin.h"
 
 #ifdef PDC_PATCH
+#include <set>
+
 static pdcid_t pdc;
 static pdcid_t cont;
 
