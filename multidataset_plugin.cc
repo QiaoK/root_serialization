@@ -357,9 +357,9 @@ int flush_multidatasets() {
             offset_length = new_end[j] - new_start[j];
             pdcid_t reg = PDCregion_create(1, &offset, &offset_length);
             pdcid_t transfer_request_id = PDCregion_transfer_create(ptr, PDC_WRITE, it->second->did, reg, reg);
-            printf("did = %lu, starting request offset = %lu, size = %lu, j = %d\n", it->second->did, offset, offset_length, j);
-            //PDCregion_transfer_start(transfer_request_id);
-            //PDCregion_transfer_wait(transfer_request_id);
+            //printf("did = %lu, starting request offset = %lu, size = %lu, j = %d\n", it->second->did, offset, offset_length, j);
+            PDCregion_transfer_start(transfer_request_id);
+            PDCregion_transfer_wait(transfer_request_id);
 
             cached_requests.push_back(transfer_request_id);
             if (it->second->mtype == H5T_NATIVE_CHAR) {
