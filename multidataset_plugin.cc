@@ -45,7 +45,7 @@ int finalize_multidataset() {
 #ifdef H5_TIMING_ENABLE
         register_timer_start(&start_time);
 #endif
-        //PDCregion_transfer_wait_all(&cached_requests[0], cached_requests.size());
+        PDCregion_transfer_wait_all(&cached_requests[0], cached_requests.size());
 #ifdef H5_TIMING_ENABLE
         register_PDCwait_timer_end(start_time);
 #endif
@@ -321,7 +321,7 @@ int flush_multidatasets() {
 #ifdef H5_TIMING_ENABLE
         register_timer_start(&start_time);
 #endif
-        //PDCregion_transfer_wait_all(&cached_requests[0], cached_requests.size());
+        PDCregion_transfer_wait_all(&cached_requests[0], cached_requests.size());
 #ifdef H5_TIMING_ENABLE
         register_PDCwait_timer_end(start_time);
 #endif
@@ -378,7 +378,7 @@ int flush_multidatasets() {
 #ifdef H5_TIMING_ENABLE
     register_timer_start(&start_time);
 #endif
-    //PDCregion_transfer_start_all(&cached_requests[0], cached_requests.size());
+    PDCregion_transfer_start_all(&cached_requests[0], cached_requests.size());
 #ifdef H5_TIMING_ENABLE
     register_PDCstart_timer_end(start_time);
 #endif
